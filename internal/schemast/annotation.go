@@ -146,6 +146,9 @@ func entSQL(annot schema.Annotation) (ast.Expr, bool, error) {
 	c := &ast.CompositeLit{
 		Type: selectorLit("entsql", "Annotation"),
 	}
+	if m.Schema != "" {
+		c.Elts = append(c.Elts, structAttr("Schema", strLit(m.Schema)))
+	}
 	if m.Table != "" {
 		c.Elts = append(c.Elts, structAttr("Table", strLit(m.Table)))
 	}
