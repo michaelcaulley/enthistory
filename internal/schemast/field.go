@@ -158,7 +158,21 @@ func fromEnumType(desc *field.Descriptor) (*ast.CallExpr, error) {
 	args := make([]ast.Expr, 0)
 	if modifier == "GoType" {
 		parts := strings.Split(info.Ident, ".")
-		args = append(args, fnCall(selectorLit(parts[0], parts[1]), strLit("")))
+		var zeroVal ast.Expr
+		if info.RType != nil {
+			switch info.RType.Kind {
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+				reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				zeroVal = intLit(0)
+			case reflect.Float32, reflect.Float64:
+				zeroVal = &ast.BasicLit{Kind: token.FLOAT, Value: "0"}
+			default:
+				zeroVal = strLit("")
+			}
+		} else {
+			zeroVal = strLit("")
+		}
+		args = append(args, fnCall(selectorLit(parts[0], parts[1]), zeroVal))
 	} else {
 		for _, pair := range desc.Enums {
 			args = append(args, strLit(pair.N))

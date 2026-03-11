@@ -9,6 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestInt64GoTypeEnum is an int64-based enum type, like a calibration rating.
+type TestInt64GoTypeEnum int64
+
+func (TestInt64GoTypeEnum) Values() []string {
+	return []string{"low", "mid", "high"}
+}
+
 // TestAnonFuncDefaultSchema is a test schema with an anonymous function Default.
 // This reproduces the bug from the GitHub issue.
 type TestAnonFuncDefaultSchema struct {
@@ -156,4 +163,44 @@ func TestHistoryFieldsWithMixinAnonFuncDefault(t *testing.T) {
 	// The Default should be inherited from the original mixin
 	require.NotNil(t, idField.Descriptor().Default,
 		"Mixin ID field Default should be inherited from the original schema")
+}
+
+// TestInt64GoTypeEnumSchema is a test schema with an int64-based GoType enum field.
+// This reproduces the bug where fromEnumType generated GoType(SomeType("")) for
+// numeric GoType enums, which is invalid Go (can't convert "" to int64).
+type TestInt64GoTypeEnumSchema struct {
+	ent.Schema
+}
+
+func (TestInt64GoTypeEnumSchema) Fields() []ent.Field {
+	return []ent.Field{
+		field.String("name"),
+		field.Enum("rating").
+			GoType(TestInt64GoTypeEnum(0)),
+	}
+}
+
+// TestHistoryFieldsWithInt64GoTypeEnum tests that historyFields() correctly generates
+// a numeric zero value (0) instead of a string ("") for int64-based GoType enum fields.
+func TestHistoryFieldsWithInt64GoTypeEnum(t *testing.T) {
+	opts := HistoryOptions{
+		InheritIdType:   false,
+		FieldProperties: &FieldProperties{},
+	}
+
+	// This should succeed without generating invalid Go like GoType(TestInt64GoTypeEnum(""))
+	fields, err := historyFields(TestInt64GoTypeEnumSchema{}, opts)
+	require.NoError(t, err, "historyFields should succeed with int64 GoType enum field")
+	require.NotEmpty(t, fields)
+
+	// Find the rating field
+	var ratingField ent.Field
+	for _, f := range fields {
+		if f.Descriptor().Name == "rating" {
+			ratingField = f
+			break
+		}
+	}
+	require.NotNil(t, ratingField, "rating field should be present in history fields")
+	require.Equal(t, field.TypeEnum, ratingField.Descriptor().Info.Type)
 }
