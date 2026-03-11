@@ -88,6 +88,23 @@ func TestAnnotation(t *testing.T) {
 			expected:   `entproto.Enum(map[string]int32{"unspecified": 0, "active": 1})`,
 		},
 		{
+			name: "entsql annotation schema",
+			annot: entsql.Annotation{
+				Schema: "my_schema",
+			},
+			expectedOk: true,
+			expected:   `entsql.Annotation{Schema: "my_schema"}`,
+		},
+		{
+			name: "entsql annotation schema and table",
+			annot: entsql.Annotation{
+				Schema: "my_schema",
+				Table:  "my_table",
+			},
+			expectedOk: true,
+			expected:   `entsql.Annotation{Schema: "my_schema", Table: "my_table"}`,
+		},
+		{
 			name: "entsql annotation table",
 			annot: entsql.Annotation{
 				Table: "table",
